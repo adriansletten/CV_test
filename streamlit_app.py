@@ -73,7 +73,7 @@ with st.sidebar:
     if selected == "Upload":
         image_file = st.file_uploader("Image file", label_visibility="collapsed", type=["png", "jpg", "jpeg", "webp", "bmp", "tiff"])
         if image_file:
-            image = Image.open(image_file)
+            image = Image.open(image_file).convert("RGB")
             # convert img to jpeg (smaller size fits in the url)
             image_bytes = io.BytesIO()
             image.save(image_bytes, format="JPEG")
@@ -102,7 +102,8 @@ with st.sidebar:
 
 
 # Title
-st.title("Modern Computer Vision Test :lion_face::hippopotamus:")
+st.title("Modern Computer Vision Test")
+st.write("Given an image, this app will detect whether :lion_face: or :hippopotamus: are present.")
 
 if image:
     st.subheader("Image")
