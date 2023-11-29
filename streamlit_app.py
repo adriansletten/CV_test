@@ -5,32 +5,30 @@ from PIL import Image, ImageDraw
 import io
 
 
-def predict_from_img_url(image_url, confidence, iou_thresh, api_key, url):
+def get_img_prediction(api_key, url, confidence, overlap, image_bytes=None, image_url=None):
+    """Make request to Roboflow's inference API given an image URL or image bytes."""
+    params = {
+        "api_key": api_key,
+        "confidence": confidence,
+        "overlap": overlap,
+        "format": "json",
+    }
+    data = None
+    headers = None
+    if image_bytes:
+        data = base64.b64encode(image_bytes).decode("ascii")
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    elif image_url:
+        params["image"] = image_url
+
     response = requests.post(
         url=url,
-        params = {
-        "api_key": api_key,
-        "image": image_url,
-        "confidence": confidence,
-        "iou_threshold": iou_thresh,
-        "format": "json"
-        }
+        params=params,
+        data=data,
+        headers=headers,
     )
     return response
 
-def predict_from_img_data(image_bytes, confidence, iou_thresh, api_key, url):
-    response = requests.post(
-        url=url,
-        params={
-            "api_key": api_key,
-            "confidence": confidence,
-            "iou_threshold": iou_thresh,
-            "format": "json"
-        },
-        data=base64.b64encode(image_bytes).decode("ascii"),
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
-    return response
 
 def draw_boxes(image, list_of_boxes):
     colors = ["blue", "orange", "green", "red", "purple", "brown", "pink", "gray", "olive", "cyan"]
@@ -38,7 +36,7 @@ def draw_boxes(image, list_of_boxes):
     draw = ImageDraw.Draw(image)
     for box in list_of_boxes:
         points = (box["x"] - box["width"]/2, box["y"] - box["height"]/2, box["x"] + box["width"]/2, box["y"] + box["height"]/2)
-        draw.rectangle(points, outline=colors[box["class_id"]], width=3)
+        draw.rectangle(points, outline=colors[box["class_id"] % len(colors)], width=3)
 
         text = f"{box['class']} {box['confidence']:.2f}"
         draw.text((box["x"] - box["width"]/2, box["y"] - box["height"]/2), text, fill="white", anchor="ld")#, stroke_width=3, stroke_fill="black")
@@ -53,7 +51,10 @@ url = f"{base_url}/{project}/{model_id}"
 
 # API key
 api_key = st.secrets["roboflow_api_key"]
+
 image = None
+image_bytes = None
+image_url = None
 
 
 st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="CV Test", page_icon=":lion_face:")
@@ -63,11 +64,7 @@ with st.sidebar:
     st.title("How to use:")
     st.markdown("1. **Upload an image or specify an image URL.**")
 
-
-    # st.subheader("Image")
-    # st.write("Upload an image or specify an image URL.")
-
-    # choose one or other
+    # choose upload or url
     selected = st.radio("Select", ("Upload", "URL"), horizontal=True, label_visibility="collapsed")
 
     if selected == "Upload":
@@ -82,12 +79,20 @@ with st.sidebar:
     elif selected == "URL":
         image_url = st.text_input("Image URL", placeholder="Image URL", label_visibility="collapsed")
         if image_url:
-            image = Image.open(requests.get(image_url, stream=True).raw)
+            with requests.get(image_url, stream=True) as resp:
+                try:
+                    resp.raise_for_status()
+                    image = Image.open(io.BytesIO(resp.content)).convert("RGB")
+                except requests.exceptions.HTTPError as e:
+                    st.error(f"Request failed: {resp.status_code} {resp.reason}")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
 
     st.markdown("2. **Adjust the confidence and IoU thresholds. Not usually needed.**")
     with st.expander("parameters", expanded=False):
-        confidence = st.slider("Confidence Threshold", 0., 1., .4, .01)
-        iou_thresh = st.slider("IoU Threshold", 0., 1., .5, .01)
+        confidence = st.slider("Confidence Threshold (default: 40)", 0, 100, 40, 1)
+        overlap = st.slider("Overlap Threshold (default: 30)", 0, 100, 30, 1)
 
     st.markdown("3. **Run the model trained on the [Hippos and Lions](https://universe.roboflow.com/adriansletten/lions_and_hippos) dataset.**")
     pressed = st.button("Run", disabled=image is None)
@@ -95,10 +100,7 @@ with st.sidebar:
     if pressed:
         # Make inference
         with st.spinner("Running inference..."):
-            if selected == "Upload":
-                response = predict_from_img_data(image_bytes, confidence, iou_thresh, api_key, url)
-            elif selected == "URL":
-                response = predict_from_img_url(image_url, confidence, iou_thresh, api_key, url)
+            response = get_img_prediction(api_key, url, confidence, overlap, image_bytes, image_url)
 
 
 # Title

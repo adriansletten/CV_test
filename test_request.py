@@ -8,14 +8,14 @@ load_dotenv()
 
 
 
-def predict_from_img_url(image_url, confidence, iou_thresh, api_key, url):
+def predict_from_img_url(api_key, url, image_url, confidence=40, overlap=30):
     response = requests.post(
         url=url,
         params = {
         "api_key": api_key,
         "image": image_url,
         "confidence": confidence,
-        "iou_threshold": iou_thresh,
+        "overlap": overlap,
         "format": "json"
         }
     )
@@ -35,10 +35,10 @@ if __name__ == "__main__":
 
     # Confidence threshold
     confidence = 40
-    iou_thresh = 50
+    overlap = 30
 
 
-    response = predict_from_img_url(image_url, confidence, iou_thresh, api_key, url)
+    response = predict_from_img_url(api_key, url, image_url, confidence, overlap)
     print(response.url)
     print(response)
     print(response.json())
