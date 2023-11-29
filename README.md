@@ -17,15 +17,16 @@ For the next steps we utilise the dataset with the "-" class removed.
 
 
 ## Model training
-For simplicity we utilise a yolo-v8 model. We train in google colab using [this notebook](). We load the dataset from the link in the previous section using the roboflow package, and using training/val/test scripts from the ultralytics package (distributors of yolo-v8). [This page](https://docs.ultralytics.com/usage/cfg/) contains parameters that can be changed when calling the different scripts.
+For simplicity we utilise a yolo-v8 model. We train in google colab using [this notebook](model_training.ipynb). We load the dataset from the link in the previous section using the roboflow package, and using training/val/test scripts from the ultralytics package (distributors of yolo-v8). [This page](https://docs.ultralytics.com/usage/cfg/) contains parameters that can be changed when calling the different scripts.
 
 ### training parameters
-We train for 100 epochs resizing the images to a size of 640x640?. sweeps?....
-
-### Model evaluation
-add eval results? 
+We train for 200 epochs resizing the images to a size of 640x640.
 
 
 ## Model deployment
 The model is deployed directly to Roboflow at the end of the notebook. This model can then be queried using POST requests as described [here](https://docs.roboflow.com/deploy/hosted-api/object-detection#inference-api-parameters).
 
+### Examples of usage
+- [Simple POST query test](test_request.py)
+- [Directly interact with the Roboflow Inference API](https://detect.roboflow.com)
+- [Streamlit app](streamlit_app.py)
