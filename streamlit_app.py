@@ -53,10 +53,10 @@ url = f"{base_url}/{project}/{model_id}"
 
 # API key
 api_key = st.secrets["roboflow_api_key"]
-
 image = None
 
-st.set_page_config(layout="wide")
+
+st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="CV Test", page_icon=":lion_face:")
 
 # Sidebar
 with st.sidebar:
@@ -81,11 +81,12 @@ with st.sidebar:
         if image_url:
             image = Image.open(requests.get(image_url, stream=True).raw)
 
-    st.markdown("2. **Adjust the confidence and IoU thresholds.**")
-    confidence = st.slider("Confidence Threshold", 0., 1., .4, .01)
-    iou_thresh = st.slider("IoU Threshold", 0., 1., .5, .01)
+    st.markdown("2. **Adjust the confidence and IoU thresholds. Not usually needed.**")
+    with st.expander("parameters", expanded=False):
+        confidence = st.slider("Confidence Threshold", 0., 1., .4, .01)
+        iou_thresh = st.slider("IoU Threshold", 0., 1., .5, .01)
 
-    st.markdown("3. **Run the model trained on the [Hippos and Lions](https://universe.roboflow.com/adriansletten/hippos_and_lions_v1) dataset.**")
+    st.markdown("3. **Run the model trained on the [Hippos and Lions](https://universe.roboflow.com/adriansletten/lions_and_hippos) dataset.**")
     pressed = st.button("Run", disabled=image is None)
 
     if pressed:
@@ -121,8 +122,10 @@ if pressed:
         predictions += f"{classes[pred['class_id']]}"
     st.write(f"**Predictions:** {predictions}")
 
-    st.subheader("JSON")
-    with st.expander("", expanded=True):
+    st.write("---")
+
+    st.subheader("JSON model output")
+    with st.expander("", expanded=False):
         st.json(response.json())
 
 
