@@ -71,10 +71,13 @@ with st.sidebar:
     selected = st.radio("Select", ("Upload", "URL"), horizontal=True, label_visibility="collapsed")
 
     if selected == "Upload":
-        image_file = st.file_uploader("Image file", label_visibility="collapsed")
+        image_file = st.file_uploader("Image file", label_visibility="collapsed", type=["png", "jpg", "jpeg", "webp", "bmp", "tiff"])
         if image_file:
-            image_bytes = image_file.read()
-            image = Image.open(io.BytesIO(image_bytes))
+            image = Image.open(image_file)
+            # convert img to jpeg (smaller size fits in the url)
+            image_bytes = io.BytesIO()
+            image.save(image_bytes, format="JPEG")
+            image_bytes = image_bytes.getvalue()
 
     elif selected == "URL":
         image_url = st.text_input("Image URL", placeholder="Image URL", label_visibility="collapsed")
