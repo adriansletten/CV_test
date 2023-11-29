@@ -29,4 +29,4 @@ The model is deployed directly to Roboflow at the end of the notebook. This mode
 ### Examples of usage
 - [Simple POST query test](test_request.py)
 - [Directly interact with the Roboflow Inference API](https://detect.roboflow.com)
-- [Streamlit app](streamlit_app.py)
+- [Streamlit app](https://cvtest-lions-and-hippos.streamlit.app)
