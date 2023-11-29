@@ -31,6 +31,7 @@ def get_img_prediction(api_key, url, confidence, overlap, image_bytes=None, imag
 
 
 def draw_boxes(image, list_of_boxes):
+    """Draw bounding boxes on image given list of boxes."""
     colors = ["blue", "orange", "green", "red", "purple", "brown", "pink", "gray", "olive", "cyan"]
 
     draw = ImageDraw.Draw(image)
@@ -43,104 +44,117 @@ def draw_boxes(image, list_of_boxes):
     return image
 
 
-# API URL
-base_url = "https://detect.roboflow.com"
-project = "lions_and_hippos"
-model_id = "1"
-url = f"{base_url}/{project}/{model_id}"
-
-# API key
-api_key = st.secrets["roboflow_api_key"]
-
-image = None
-image_bytes = None
-image_url = None
-
-
-st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="CV Test", page_icon=":lion_face:")
-
-# Sidebar
-with st.sidebar:
-    st.title("How to use:")
-    st.markdown("1. **Upload an image or specify an image URL.**")
-
-    # choose upload or url
-    selected = st.radio("Select", ("Upload", "URL"), horizontal=True, label_visibility="collapsed")
-
-    if selected == "Upload":
-        image_file = st.file_uploader("Image file", label_visibility="collapsed", type=["png", "jpg", "jpeg", "webp", "bmp", "tiff"])
-        if image_file:
-            image = Image.open(image_file).convert("RGB")
-            # convert img to jpeg (smaller size fits in the url)
-            image_bytes = io.BytesIO()
-            image.save(image_bytes, format="JPEG")
-            image_bytes = image_bytes.getvalue()
-
-    elif selected == "URL":
-        image_url = st.text_input("Image URL", placeholder="Image URL", label_visibility="collapsed")
-        if image_url:
-            with requests.get(image_url, stream=True) as resp:
-                try:
-                    resp.raise_for_status()
-                    image = Image.open(io.BytesIO(resp.content)).convert("RGB")
-                except requests.exceptions.HTTPError as e:
-                    st.error(f"Request failed: {resp.status_code} {resp.reason}")
-                except Exception as e:
-                    st.error(f"Error: {e}")
+def page_config():
+    """Configure the page layout of Streamlit app."""
+    # Set wide layout
+    st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="CV Test", page_icon=":lion_face:")
+    # Hide rainbow bar on the top of page, "Made with Streamlit", and hamburger menu
+    hide_streamlit_style = '''
+        <style>
+            header {visibility: hidden;}
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+        </style>
+    '''
+    st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
 
 
-    st.markdown("2. **Adjust the confidence and IoU thresholds. Not usually needed.**")
-    with st.expander("parameters", expanded=False):
-        confidence = st.slider("Confidence Threshold (default: 40)", 0, 100, 40, 1)
-        overlap = st.slider("Overlap Threshold (default: 30)", 0, 100, 30, 1)
 
-    st.markdown("3. **Run the model trained on the [Hippos and Lions](https://universe.roboflow.com/adriansletten/lions_and_hippos) dataset.**")
-    pressed = st.button("Run", disabled=image is None)
+def sidebar(api_key, url):
+    """Sidebar of Streamlit app."""
+    image = None
+    image_bytes = None
+    image_url = None
+    response = None
 
-    if pressed:
-        # Make inference
-        with st.spinner("Running inference..."):
-            response = get_img_prediction(api_key, url, confidence, overlap, image_bytes, image_url)
+    with st.sidebar:
+        st.title("How to use:")
+        st.markdown("1. **Upload an image or specify an image URL.**")
 
+        # choose upload or url
+        selected = st.radio("Select", ("Upload", "URL"), horizontal=True, label_visibility="collapsed")
 
-# Title
-st.title("Modern Computer Vision Test")
-st.write("Given an image, this app will detect whether :lion_face: or :hippopotamus: are present.")
+        if selected == "Upload":
+            image_file = st.file_uploader("Image file", label_visibility="collapsed", type=["png", "jpg", "jpeg", "webp", "bmp", "tiff"])
+            if image_file:
+                image = Image.open(image_file).convert("RGB")
+                # convert img to jpeg (smaller size fits in the url)
+                image_bytes = io.BytesIO()
+                image.save(image_bytes, format="JPEG")
+                image_bytes = image_bytes.getvalue()
 
-if image:
-    st.subheader("Image")
-    placeholder = st.empty()
-    placeholder.image(image)    
-
-if pressed:
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        st.error(f"Request failed: {response.status_code} {response.reason}")
-        st.stop()
-
-    # Display results
-    placeholder.image(draw_boxes(image, response.json()["predictions"]))
-    
-    classes = [":hippopotamus:", ":lion_face:"]
-    predictions = ""
-    for pred in response.json()["predictions"]:
-        predictions += f"{classes[pred['class_id']]}"
-    st.write(f"**Predictions:** {predictions}")
-
-    st.write("---")
-
-    st.subheader("JSON model output")
-    with st.expander("", expanded=False):
-        st.json(response.json())
+        elif selected == "URL":
+            image_url = st.text_input("Image URL", placeholder="Image URL", label_visibility="collapsed")
+            if image_url:
+                with requests.get(image_url, stream=True) as resp:
+                    try:
+                        resp.raise_for_status()
+                        image = Image.open(io.BytesIO(resp.content)).convert("RGB")
+                    except requests.exceptions.HTTPError as e:
+                        st.error(f"Request failed: {resp.status_code} {resp.reason}")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
 
 
-# Hide rainbow bar on the top of page, "Made with Streamlit", and hamburger menu
-hide_streamlit_style = '''
-    <style>
-        header {visibility: hidden;}
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-    </style>
-'''
-st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
+        st.markdown("2. **Adjust the confidence and overlap thresholds.**")
+        with st.expander("parameters", expanded=False):
+            confidence = st.slider("Confidence Threshold (default: 40)", 0, 100, 40, 1)
+            overlap = st.slider("Overlap Threshold (default: 30)", 0, 100, 30, 1)
+
+        st.markdown("3. **Run the model trained on the [Hippos and Lions](https://universe.roboflow.com/adriansletten/lions_and_hippos) dataset.**")
+        pressed = st.button("Run", disabled=image is None)
+
+        if pressed:
+            # Make inference
+            with st.spinner("Running inference..."):
+                response = get_img_prediction(api_key, url, confidence, overlap, image_bytes, image_url)
+
+    return image, response
+
+def main_page(image=None, response=None):
+    """Main page of Streamlit app."""
+    # Title
+    st.title("Modern Computer Vision Test")
+    st.write("Given an image, this app will detect whether :lion_face: or :hippopotamus: are present.")
+
+    if image:
+        st.subheader("Image")
+        placeholder = st.empty()
+        placeholder.image(image)    
+
+    if response is not None:
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            st.error(f"Request failed: {response.status_code} {response.reason}")
+            st.stop()
+
+        # Display results
+        placeholder.image(draw_boxes(image, response.json()["predictions"]))
+        
+        classes = [":hippopotamus:", ":lion_face:"]
+        predictions = ""
+        for pred in response.json()["predictions"]:
+            predictions += f"{classes[pred['class_id']]}"
+        st.write(f"**Predictions:** {predictions}")
+
+        st.write("---")
+
+        st.subheader("JSON model output")
+        with st.expander("", expanded=False):
+            st.json(response.json())
+
+
+if __name__ == "__main__":
+    # API key
+    api_key = st.secrets["roboflow_api_key"]
+    # API URL
+    base_url = "https://detect.roboflow.com"
+    project = "lions_and_hippos"
+    model_id = "1"
+    url = f"{base_url}/{project}/{model_id}"
+
+
+    page_config()
+    image, response = sidebar(api_key, url)
+    main_page(image, response)
