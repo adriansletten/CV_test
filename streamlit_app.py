@@ -151,7 +151,7 @@ if __name__ == "__main__":
     # API URL
     base_url = "https://detect.roboflow.com"
     project = "lions_and_hippos"
-    model_id = "1"
+    model_id = "2"
     url = f"{base_url}/{project}/{model_id}"
 
 
