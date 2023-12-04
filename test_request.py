@@ -3,11 +3,6 @@ from dotenv import load_dotenv
 import os
 
 
-load_dotenv()
-# Access the API key
-
-
-
 def predict_from_img_url(api_key, url, image_url, confidence=40, overlap=30):
     response = requests.post(
         url=url,
@@ -23,6 +18,8 @@ def predict_from_img_url(api_key, url, image_url, confidence=40, overlap=30):
 
 
 if __name__ == "__main__":
+    # Access the API key
+    load_dotenv() # loads environment variables set in a ".env" file into a Python dictionary
     api_key = os.environ.get('ROBOFLOW_API_KEY')
 
     base_url = "https://detect.roboflow.com"

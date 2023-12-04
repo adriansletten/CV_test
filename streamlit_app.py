@@ -147,7 +147,7 @@ def main_page(image=None, response=None):
 
 if __name__ == "__main__":
     # API key
-    api_key = st.secrets["roboflow_api_key"]
+    api_key = st.secrets["roboflow_api_key"] # stored in ~/.streamlit/secrets.toml
     # API URL
     base_url = "https://detect.roboflow.com"
     project = "lions_and_hippos"
